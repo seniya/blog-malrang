@@ -22,7 +22,7 @@ export function validateSessionSecret(value: string | undefined): string {
 }
 
 const optionalEnvString = z.preprocess((value) => (value === "" ? undefined : value), z.string().min(1).optional());
-const optionalAdminPassword = z.preprocess((value) => (value === "" ? undefined : value), z.string().min(12).optional());
+const optionalAdminPassword = z.preprocess((value) => (value === "" ? undefined : value), z.string().min(8).optional());
 
 const envSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.literal(CANONICAL_SITE_URL).default(CANONICAL_SITE_URL),
