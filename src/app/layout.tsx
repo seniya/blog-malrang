@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { Providers } from "@/providers/providers";
+import { env } from "@/lib/env";
 
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://blog.malrang.net"),
+  metadataBase: new URL(env.NEXT_PUBLIC_SITE_URL),
   title: {
     default: "blog.malrang.net",
     template: "%s | blog.malrang.net",
