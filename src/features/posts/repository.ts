@@ -1,7 +1,7 @@
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 
 import type { Db } from "@/db/client";
-import { posts, type Post } from "@/db/schema";
+import { categories, postCategories, postTags, posts, tags, type Category, type Post, type Tag } from "@/db/schema";
 import { postInputSchema, postUpdateSchema, type PostInput, type PostUpdate } from "@/features/posts/validation";
 
 export type PostRepository = Pick<Db, "select" | "insert" | "update" | "delete">;
@@ -25,6 +25,40 @@ export function getPublishedPostBySlug(database: PostRepository, slug: string): 
     .where(and(eq(posts.slug, slug), eq(posts.status, "published"), isNotNull(posts.publishedAt)))
     .all()
     .at(0);
+}
+
+export function getCategoryBySlug(database: PostRepository, slug: string): Category | undefined {
+  return database.select().from(categories).where(eq(categories.slug, slug)).get();
+}
+
+export function getTagBySlug(database: PostRepository, slug: string): Tag | undefined {
+  return database.select().from(tags).where(eq(tags.slug, slug)).get();
+}
+
+export function listPublishedPostsByCategory(database: PostRepository, categorySlug: string, limit = 100): Post[] {
+  return database
+    .select({ post: posts })
+    .from(posts)
+    .innerJoin(postCategories, eq(postCategories.postId, posts.id))
+    .innerJoin(categories, eq(categories.id, postCategories.categoryId))
+    .where(and(eq(categories.slug, categorySlug), eq(posts.status, "published"), isNotNull(posts.publishedAt)))
+    .orderBy(desc(posts.publishedAt), desc(posts.createdAt))
+    .limit(Math.max(1, Math.min(limit, 100)))
+    .all()
+    .map(({ post }) => post);
+}
+
+export function listPublishedPostsByTag(database: PostRepository, tagSlug: string, limit = 100): Post[] {
+  return database
+    .select({ post: posts })
+    .from(posts)
+    .innerJoin(postTags, eq(postTags.postId, posts.id))
+    .innerJoin(tags, eq(tags.id, postTags.tagId))
+    .where(and(eq(tags.slug, tagSlug), eq(posts.status, "published"), isNotNull(posts.publishedAt)))
+    .orderBy(desc(posts.publishedAt), desc(posts.createdAt))
+    .limit(Math.max(1, Math.min(limit, 100)))
+    .all()
+    .map(({ post }) => post);
 }
 
 /** Admin-only query boundary; callers must perform authorization in a later phase. */
