@@ -17,15 +17,15 @@ export const postListQuerySchema = z.object({
 
 export function validationError(error: unknown) {
   const issues = error instanceof ZodError ? error.issues : undefined;
-  return NextResponse.json({ error: "Validation failed", issues }, { status: 400 });
+  return adminJson({ error: "Validation failed", issues }, { status: 400 });
 }
 
 export function notFoundError() {
-  return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  return adminJson({ error: "Post not found" }, { status: 404 });
 }
 
 export function serverError() {
-  return NextResponse.json({ error: "Unable to complete request" }, { status: 500 });
+  return adminJson({ error: "Unable to complete request" }, { status: 500 });
 }
 
 export function conflictError(message = "A post with this slug already exists") {
@@ -37,7 +37,7 @@ export const MAX_POST_BODY_BYTES = 1_048_576;
 export class RequestBodyTooLargeError extends Error {}
 
 export function bodyTooLargeError() {
-  return NextResponse.json({ error: "Request body is too large" }, { status: 413 });
+  return adminJson({ error: "Request body is too large" }, { status: 413 });
 }
 
 export async function readJson(request: Request): Promise<unknown> {

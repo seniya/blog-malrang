@@ -15,8 +15,8 @@ export const postInputSchema = z.object({
   coverImageUrl: z.string().url().nullable().optional(),
   status: postStatusSchema.default("draft"),
   publishedAt: z.coerce.date().nullable().optional(),
-  categoryIds: z.array(z.string().uuid()).max(50).default([]),
-  tagIds: z.array(z.string().uuid()).max(100).default([]),
+  categoryIds: z.array(z.string().uuid()).max(50).refine((ids) => new Set(ids).size === ids.length, "Duplicate category IDs are not allowed").default([]),
+  tagIds: z.array(z.string().uuid()).max(100).refine((ids) => new Set(ids).size === ids.length, "Duplicate tag IDs are not allowed").default([]),
 });
 
 export const postUpdateSchema = z.object({
@@ -33,8 +33,8 @@ export const postUpdateSchema = z.object({
   coverImageUrl: z.string().url().nullable().optional(),
   status: postStatusSchema.optional(),
   publishedAt: z.coerce.date().nullable().optional(),
-  categoryIds: z.array(z.string().uuid()).max(50).optional(),
-  tagIds: z.array(z.string().uuid()).max(100).optional(),
+  categoryIds: z.array(z.string().uuid()).max(50).refine((ids) => new Set(ids).size === ids.length, "Duplicate category IDs are not allowed").optional(),
+  tagIds: z.array(z.string().uuid()).max(100).refine((ids) => new Set(ids).size === ids.length, "Duplicate tag IDs are not allowed").optional(),
 });
 
 export type PostInput = z.input<typeof postInputSchema>;

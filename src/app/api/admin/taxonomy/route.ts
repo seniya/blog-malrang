@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/db/client";
 import { createCategory, createTag, listCategories, listTags } from "@/features/taxonomy/repository";
@@ -15,7 +14,7 @@ export async function GET(request: Request) {
 }
 export async function POST(request: Request) {
   const unauthorized = requireAdmin(request); if (unauthorized) return unauthorized;
-  if (!sameOrigin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!sameOrigin(request)) return adminJson({ error: "Forbidden" }, { status: 403 });
   let body: unknown; try { body = await readJson(request); } catch (error) { if (error instanceof RequestBodyTooLargeError) return bodyTooLargeError(); return validationError(error); }
   const parsed = z.object({ type: z.enum(["category", "tag"]), data: z.unknown() }).safeParse(body);
   if (!parsed.success) return validationError(parsed.error);

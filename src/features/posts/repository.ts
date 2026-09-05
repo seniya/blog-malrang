@@ -5,6 +5,7 @@ import { categories, postCategories, postTags, posts, tags, type Category, type 
 import { postInputSchema, postUpdateSchema, type PostInput, type PostUpdate } from "@/features/posts/validation";
 
 export type PostRepository = Pick<Db, "select" | "selectDistinct" | "insert" | "update" | "delete"> & { transaction?: (callback: (database: PostRepository) => unknown) => unknown };
+export type PostWithTaxonomy = Post & { categories: Pick<Category, "id" | "name" | "slug">[]; tags: Pick<Tag, "id" | "name" | "slug">[] };
 
 const publishedNow = () => and(eq(posts.status, "published"), isNotNull(posts.publishedAt), lte(posts.publishedAt, new Date()));
 
@@ -59,8 +60,8 @@ export function getPublishedTagBySlug(database: PostRepository, slug: string): T
   return listPublishedTags(database).find((tag) => tag.slug === slug);
 }
 
-export function listPublishedPostsByCategory(database: PostRepository, categorySlug: string, limit = 100): Post[] {
-  return database
+export function listPublishedPostsByCategory(database: PostRepository, categorySlug: string, limit = 100): PostWithTaxonomy[] {
+  return withTaxonomy(database, database
     .select({ post: posts })
     .from(posts)
     .innerJoin(postCategories, eq(postCategories.postId, posts.id))
@@ -69,11 +70,11 @@ export function listPublishedPostsByCategory(database: PostRepository, categoryS
     .orderBy(desc(posts.publishedAt), desc(posts.createdAt))
     .limit(Math.max(1, Math.min(limit, 100)))
     .all()
-    .map(({ post }) => post);
+    .map(({ post }) => post));
 }
 
-export function listPublishedPostsByTag(database: PostRepository, tagSlug: string, limit = 100): Post[] {
-  return database
+export function listPublishedPostsByTag(database: PostRepository, tagSlug: string, limit = 100): PostWithTaxonomy[] {
+  return withTaxonomy(database, database
     .select({ post: posts })
     .from(posts)
     .innerJoin(postTags, eq(postTags.postId, posts.id))
@@ -82,7 +83,7 @@ export function listPublishedPostsByTag(database: PostRepository, tagSlug: strin
     .orderBy(desc(posts.publishedAt), desc(posts.createdAt))
     .limit(Math.max(1, Math.min(limit, 100)))
     .all()
-    .map(({ post }) => post);
+    .map(({ post }) => post));
 }
 
 /** Admin-only query boundary; callers must perform authorization before calling. */
@@ -144,6 +145,8 @@ export function getPostTaxonomyNames(database: PostRepository, postId: string) {
     tags: database.select({ id: tags.id, name: tags.name, slug: tags.slug }).from(postTags).innerJoin(tags, eq(tags.id, postTags.tagId)).where(eq(postTags.postId, postId)).all(),
   };
 }
+
+function withTaxonomy(database: PostRepository, rows: Post[]): PostWithTaxonomy[] { return rows.map((post) => ({ ...post, ...getPostTaxonomyNames(database, post.id) })); }
 
 export function replacePostTaxonomy(database: PostRepository, postId: string, categoryIds: string[], tagIds: string[]) {
   const categoryCount = database.select({ id: categories.id }).from(categories).where(inArray(categories.id, categoryIds)).all().length;

@@ -23,7 +23,7 @@ export function getAuthenticatedSession(request: Request, database: Db = db) {
 }
 
 export function requireAdmin(request: Request): NextResponse | null {
-  if (!getAuthenticatedSession(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!getAuthenticatedSession(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: { "Cache-Control": "private, no-store" } });
   return null;
 }
 

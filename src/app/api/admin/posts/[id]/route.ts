@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server";
-
 import { db } from "@/db/client";
 import { deletePost, getPostById, getPostTaxonomy, updatePost } from "@/features/posts/repository";
 import { postUpdateSchema } from "@/features/posts/validation";
@@ -30,7 +28,7 @@ export async function GET(request: Request, context: Context) {
 export async function PATCH(request: Request, context: Context) {
   const unauthorized = requireAdmin(request);
   if (unauthorized) return unauthorized;
-  if (!sameOrigin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!sameOrigin(request)) return adminJson({ error: "Forbidden" }, { status: 403 });
   const id = await getId(context);
   if (!id.success) return validationError(id.error);
   let body: unknown;
@@ -56,7 +54,7 @@ export const PUT = PATCH;
 export async function DELETE(request: Request, context: Context) {
   const unauthorized = requireAdmin(request);
   if (unauthorized) return unauthorized;
-  if (!sameOrigin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!sameOrigin(request)) return adminJson({ error: "Forbidden" }, { status: 403 });
   const id = await getId(context);
   if (!id.success) return validationError(id.error);
   try {

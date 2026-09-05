@@ -7,6 +7,8 @@ import type { Category, Tag } from "@/db/schema";
 export const adminPostsKey = ["admin", "posts"] as const;
 export function useAdminTaxonomy() { return useQuery({ queryKey: ["admin", "taxonomy"], queryFn: () => requestJson<{ categories: Category[]; tags: Tag[] }>("/api/admin/taxonomy") }); }
 export function useCreateTaxonomy() { const client = useQueryClient(); return useMutation({ mutationFn: (input: { type: "category" | "tag"; data: Record<string, string> }) => requestJson("/api/admin/taxonomy", { method: "POST", body: JSON.stringify(input) }), onSuccess: () => client.invalidateQueries({ queryKey: ["admin", "taxonomy"] }) }); }
+export function useUpdateTaxonomy() { const client = useQueryClient(); return useMutation({ mutationFn: (input: { type: "category" | "tag"; id: string; data: Record<string, string> }) => requestJson(`/api/admin/${input.type === "category" ? "categories" : "tags"}/${input.id}`, { method: "PATCH", body: JSON.stringify(input.data) }), onSuccess: () => client.invalidateQueries({ queryKey: ["admin", "taxonomy"] }) }); }
+export function useDeleteTaxonomy() { const client = useQueryClient(); return useMutation({ mutationFn: (input: { type: "category" | "tag"; id: string }) => requestJson(`/api/admin/${input.type === "category" ? "categories" : "tags"}/${input.id}`, { method: "DELETE" }), onSuccess: () => client.invalidateQueries({ queryKey: ["admin", "taxonomy"] }) }); }
 
 async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
