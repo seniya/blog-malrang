@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, lte } from "drizzle-orm";
+import { and, desc, eq, isNotNull, lte, sql } from "drizzle-orm";
 
 import type { Db } from "@/db/client";
 import { categories, postCategories, postTags, posts, tags, type Category, type Post, type Tag } from "@/db/schema";
@@ -85,9 +85,15 @@ export function listPublishedPostsByTag(database: PostRepository, tagSlug: strin
     .map(({ post }) => post);
 }
 
-/** Admin-only query boundary; callers must perform authorization in a later phase. */
-export function listAllPosts(database: PostRepository): Post[] {
-  return database.select().from(posts).orderBy(desc(posts.updatedAt)).all();
+/** Admin-only query boundary; callers must perform authorization before calling. */
+export function listAllPosts(database: PostRepository, filters?: { status?: "draft" | "published"; search?: string }): Post[] {
+  const conditions = [];
+  if (filters?.status) conditions.push(eq(posts.status, filters.status));
+  if (filters?.search) {
+    const term = `%${filters.search.replace(/[\\%_]/g, "\\$&").toLowerCase()}%`;
+    conditions.push(sql`(lower(${posts.title}) like ${term} escape '\\' or lower(${posts.slug}) like ${term} escape '\\')`);
+  }
+  return database.select().from(posts).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(posts.updatedAt)).all();
 }
 
 export function getPostById(database: PostRepository, id: string): Post | undefined {
