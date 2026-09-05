@@ -12,7 +12,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
-    "db:bootstrap-admin": "tsx src/db/bootstrap-admin.ts"
+    "db:bootstrap-admin": "tsx src/db/bootstrap-admin.ts",
+    "db:reset-admin-password": "tsx src/db/reset-admin-password.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

@@ -15,7 +15,7 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:3000. `SESSION_SECRET` is required and must be a fresh 32+ character value; generate it with `openssl rand -base64 48`. Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` before `npm run db:bootstrap-admin`.
+Then open http://localhost:3000. `SESSION_SECRET` is required and must be a fresh 32+ character value; generate it with `openssl rand -base64 48`. Set `ADMIN_USERNAME` and an `ADMIN_PASSWORD` of at least 8 characters before `npm run db:bootstrap-admin`. To change an existing account's password, run `npm run db:reset-admin-password` with the same variables.
 
 ## Checks
 
