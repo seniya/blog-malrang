@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { ZodError, z } from "zod";
 
 export const postIdSchema = z.string().uuid();
+export const ADMIN_PRIVATE_CACHE_CONTROL = "private, no-store";
+
+export function adminJson<T>(body: T, init?: ResponseInit) {
+  const headers = new Headers(init?.headers);
+  headers.set("Cache-Control", ADMIN_PRIVATE_CACHE_CONTROL);
+  return NextResponse.json(body, { ...init, headers });
+}
+
 export const postListQuerySchema = z.object({
   status: z.enum(["draft", "published"]).optional(),
   search: z.string().trim().max(100).optional(),

@@ -4,7 +4,9 @@ import { db } from "@/db/client";
 import { createPost, listAllPosts } from "@/features/posts/repository";
 import { postInputSchema } from "@/features/posts/validation";
 import { requireAdmin, sameOrigin } from "@/lib/auth";
-import { bodyTooLargeError, conflictError, postListQuerySchema, readJson, RequestBodyTooLargeError, serverError, validationError } from "./_shared";
+import { adminJson, bodyTooLargeError, conflictError, postListQuerySchema, readJson, RequestBodyTooLargeError, serverError, validationError } from "./_shared";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const unauthorized = requireAdmin(request);
@@ -12,7 +14,7 @@ export async function GET(request: Request) {
   const parsed = postListQuerySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
   if (!parsed.success) return validationError(parsed.error);
   try {
-    return NextResponse.json({ posts: listAllPosts(db, parsed.data) });
+    return adminJson({ posts: listAllPosts(db, parsed.data) });
   } catch {
     return serverError();
   }

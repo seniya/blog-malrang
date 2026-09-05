@@ -4,7 +4,9 @@ import { db } from "@/db/client";
 import { deletePost, getPostById, updatePost } from "@/features/posts/repository";
 import { postUpdateSchema } from "@/features/posts/validation";
 import { requireAdmin, sameOrigin } from "@/lib/auth";
-import { bodyTooLargeError, conflictError, notFoundError, postIdSchema, readJson, RequestBodyTooLargeError, serverError, validationError } from "../_shared";
+import { adminJson, bodyTooLargeError, conflictError, notFoundError, postIdSchema, readJson, RequestBodyTooLargeError, serverError, validationError } from "../_shared";
+
+export const dynamic = "force-dynamic";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -19,7 +21,7 @@ export async function GET(request: Request, context: Context) {
   if (!id.success) return validationError(id.error);
   try {
     const post = getPostById(db, id.data);
-    return post ? NextResponse.json({ post }) : notFoundError();
+    return post ? adminJson({ post }) : notFoundError();
   } catch {
     return serverError();
   }
