@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { deletePost, getPostById, updatePost } from "@/features/posts/repository";
 import { postUpdateSchema } from "@/features/posts/validation";
-import { requireAdmin } from "@/lib/auth";
-import { conflictError, notFoundError, postIdSchema, readJson, serverError, validationError } from "../_shared";
+import { requireAdmin, sameOrigin } from "@/lib/auth";
+import { bodyTooLargeError, conflictError, notFoundError, postIdSchema, readJson, RequestBodyTooLargeError, serverError, validationError } from "../_shared";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -17,16 +17,27 @@ export async function GET(request: Request, context: Context) {
   if (unauthorized) return unauthorized;
   const id = await getId(context);
   if (!id.success) return validationError(id.error);
-  const post = getPostById(db, id.data);
-  return post ? NextResponse.json({ post }) : notFoundError();
+  try {
+    const post = getPostById(db, id.data);
+    return post ? NextResponse.json({ post }) : notFoundError();
+  } catch {
+    return serverError();
+  }
 }
 
 export async function PATCH(request: Request, context: Context) {
   const unauthorized = requireAdmin(request);
   if (unauthorized) return unauthorized;
+  if (!sameOrigin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const id = await getId(context);
   if (!id.success) return validationError(id.error);
-  const parsed = postUpdateSchema.safeParse(await readJson(request).catch(() => undefined));
+  let body: unknown;
+  try {
+    body = await readJson(request);
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) return bodyTooLargeError();
+  }
+  const parsed = postUpdateSchema.safeParse(body);
   if (!parsed.success) return validationError(parsed.error);
   try {
     const post = updatePost(db, id.data, parsed.data);
@@ -42,7 +53,12 @@ export const PUT = PATCH;
 export async function DELETE(request: Request, context: Context) {
   const unauthorized = requireAdmin(request);
   if (unauthorized) return unauthorized;
+  if (!sameOrigin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const id = await getId(context);
   if (!id.success) return validationError(id.error);
-  return deletePost(db, id.data) ? NextResponse.json({ deleted: true }) : notFoundError();
+  try {
+    return deletePost(db, id.data) ? NextResponse.json({ deleted: true }) : notFoundError();
+  } catch {
+    return serverError();
+  }
 }

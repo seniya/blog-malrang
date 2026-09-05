@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import type { Post } from "@/db/schema";
@@ -28,8 +28,8 @@ export function PostForm({ post }: { post?: Post }) {
   const create = useCreatePost();
   const update = useUpdatePost(post?.id ?? "");
   const mutation = post ? update : create;
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: defaults(post) });
-  const content = watch("content");
+  const { control, register, handleSubmit, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: defaults(post) });
+  const content = useWatch({ control, name: "content" });
   const submit = handleSubmit(async (values) => {
     await mutation.mutateAsync({ ...values, coverImageUrl: values.coverImageUrl || null });
     router.push("/admin/posts");
