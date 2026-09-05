@@ -7,7 +7,8 @@ export function ThemeToggle() {
   return (
     <button
       type="button"
-      aria-label="테마 변경"
+      aria-label={resolvedTheme === "dark" ? "라이트 테마로 변경" : "다크 테마로 변경"}
+      aria-pressed={resolvedTheme === "dark"}
       className="rounded-md px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >

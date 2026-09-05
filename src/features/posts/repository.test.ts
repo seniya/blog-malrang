@@ -3,8 +3,8 @@ import { test } from "node:test";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 
 import { createDb } from "@/db/client";
-import { posts } from "@/db/schema";
-import { createPost, getPublishedPostBySlug, listPublishedPosts, updatePost } from "@/features/posts/repository";
+import { categories, postCategories, postTags, posts, tags } from "@/db/schema";
+import { createPost, getPublishedCategoryBySlug, getPublishedPostBySlug, getPublishedTagBySlug, listPublishedCategories, listPublishedPosts, listPublishedTags, updatePost } from "@/features/posts/repository";
 import { postInputSchema, postUpdateSchema } from "@/features/posts/validation";
 
 function testDb() {
@@ -81,5 +81,26 @@ test("database constraint rejects inconsistent publication timestamps", () => {
       publishedAt: null,
     }).run(),
   );
+  database.close();
+});
+
+test("public queries exclude future posts and draft-only taxonomies", () => {
+  const database = testDb();
+  const draft = createPost(database, { title: "Draft", slug: "draft-taxonomy", content: "hidden" });
+  const future = createPost(database, { title: "Future", slug: "future-taxonomy", content: "hidden", status: "published", publishedAt: new Date(Date.now() + 86_400_000) });
+  const visible = createPost(database, { title: "Visible", slug: "visible-taxonomy", content: "shown", status: "published" });
+  const draftCategory = database.insert(categories).values({ name: "Draft category", slug: "draft-category" }).returning().get();
+  const futureTag = database.insert(tags).values({ name: "Future tag", slug: "future-tag" }).returning().get();
+  const visibleCategory = database.insert(categories).values({ name: "Visible category", slug: "visible-category" }).returning().get();
+  const visibleTag = database.insert(tags).values({ name: "Visible tag", slug: "visible-tag" }).returning().get();
+  database.insert(postCategories).values([{ postId: draft.id, categoryId: draftCategory.id }, { postId: visible.id, categoryId: visibleCategory.id }]).run();
+  database.insert(postTags).values([{ postId: future.id, tagId: futureTag.id }, { postId: visible.id, tagId: visibleTag.id }]).run();
+
+  assert.deepEqual(listPublishedPosts(database).map((post) => post.slug), ["visible-taxonomy"]);
+  assert.deepEqual(listPublishedCategories(database).map((category) => category.slug), ["visible-category"]);
+  assert.deepEqual(listPublishedTags(database).map((tag) => tag.slug), ["visible-tag"]);
+  assert.equal(getPublishedPostBySlug(database, future.slug), undefined);
+  assert.equal(getPublishedCategoryBySlug(database, "draft-category"), undefined);
+  assert.equal(getPublishedTagBySlug(database, "future-tag"), undefined);
   database.close();
 });
