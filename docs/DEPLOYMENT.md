@@ -27,6 +27,8 @@ REVERSE_PROXY_NETWORK=reverse-proxy
 
 ```bash
 mkdir -p data uploads backups
+# Keep the runtime directories present in a fresh checkout.
+touch backups/.gitkeep uploads/.gitkeep
 # reverse proxy가 다른 compose 프로젝트라면 같은 external network에 연결
 # docker network connect reverse-proxy <reverse-proxy-container>
 ```
@@ -58,15 +60,22 @@ Reverse proxy에서 upstream을 `http://blog:3000`으로 설정하고 호스트 
 # 서비스 중에도 일관된 백업 생성
 ./scripts/backup-db.sh ./data/blog.db ./backups
 
-# 복구: 서비스를 멈추고, target이 없어야 하며 integrity_check 후 복사
-# (기존 DB를 덮어쓰지 않도록 별도 디렉터리/이름을 사용)
+# 복구: 기존 DB를 백업한 뒤 서비스를 멈추고, clean staging target에 복구
 docker compose down
-./scripts/restore-db.sh ./backups/blog-YYYYMMDDTHHMMSSZ.db ./data/blog.db
+./scripts/backup-db.sh ./data/blog.db ./backups
+rm -rf ./data/restore-staging
+mkdir -p ./data/restore-staging
+./scripts/restore-db.sh ./backups/blog-YYYYMMDDTHHMMSSZ.db ./data/restore-staging/blog.db
+mv ./data/blog.db ./data/blog.db.before-restore
+mv ./data/restore-staging/blog.db ./data/blog.db
+rm -rf ./data/restore-staging
 docker compose run --rm blog npm run db:migrate
 docker compose up -d blog
 ```
 
-백업 파일은 앱 데이터와 별도의 디스크/호스트에 보관하고 보존 정책을 운영자가 정합니다. `restore-db.sh`는 기존 DB 덮어쓰기를 거부합니다.
+`YYYYMMDDTHHMMSSZ`는 실제 백업 파일명으로 바꿉니다. 복구 전 `backup-db.sh`로 현재 DB를 별도 백업하고, `restore-db.sh`는 기존 파일 덮어쓰기를 거부하므로 반드시 비어 있는 staging 경로를 사용합니다. `blog.db.before-restore`는 복구가 검증될 때까지 보관하고, 검증 실패 시 서비스를 다시 멈춘 뒤 이 파일을 원래 이름으로 되돌립니다. 업로드 파일은 DB와 별개이므로 복구 시 `uploads/`도 필요한 시점의 파일 백업에서 복원합니다.
+
+백업 파일은 앱 데이터와 별도의 디스크/호스트에 보관하고 보존 정책을 운영자가 정합니다. 이 문서는 호스트에서 실행하는 절차이며, 현재 호스트에 `sqlite3`가 설치되어 있지 않다면 백업/복구 명령을 실행할 수 없습니다. 운영 전 `sqlite3` 설치와 실제 백업 파일 존재를 확인하세요.
 
 ## 업데이트 및 검증
 
