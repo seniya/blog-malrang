@@ -30,7 +30,7 @@ async function verifyEdgeSession(token: string | undefined): Promise<boolean> {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (pathname === "/admin/login" || pathname.startsWith("/api/auth/")) return NextResponse.next();
   const cookie = request.cookies.get("blog_admin_session")?.value;
