@@ -35,8 +35,9 @@ describe("signed sessions", () => {
 });
 
 describe("authentication request hardening", () => {
-  it("accepts the documented temporary test secret and rejects weak placeholders", () => {
-    assert.equal(validateSessionSecret("a-long-random-test-secret-value-1234567890"), "a-long-random-test-secret-value-1234567890");
+  it("accepts a sufficiently long random secret and rejects weak placeholders", () => {
+    const testSecret = "Q7v!2nR#9xL@4pK$8wM%3cD^6fH&1sJ*5zT";
+    assert.equal(validateSessionSecret(testSecret), testSecret);
     assert.throws(() => validateSessionSecret("short"));
     assert.throws(() => validateSessionSecret("replace-with-a-random-32-character-secret"));
   });

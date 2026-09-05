@@ -15,7 +15,7 @@ export function validateSessionSecret(value: string | undefined): string {
   if (!value) throw new Error("SESSION_SECRET must be set to a random 32+ character value");
   if (value.length < 32) throw new Error("SESSION_SECRET must be at least 32 characters");
   const lower = value.toLowerCase();
-  if (lower !== "a-long-random-test-secret-value-1234567890" && obviousSecretPlaceholders.some((placeholder) => lower.includes(placeholder))) {
+  if (obviousSecretPlaceholders.some((placeholder) => lower.includes(placeholder))) {
     throw new Error("SESSION_SECRET must not contain an obvious placeholder");
   }
   return value;
