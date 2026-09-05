@@ -26,4 +26,14 @@ npm test
 npm run build
 ```
 
-The database schema, migrations, authentication, and admin UI are intentionally deferred to later implementation phases. `DATABASE_URL` is documented now so the local environment is ready for the Drizzle/SQLite data layer.
+## Database
+
+The SQLite/Drizzle data layer is available through the following commands. `DATABASE_URL` accepts a SQLite path and defaults to `./data/blog.db`.
+
+```bash
+npm run db:generate
+npm run db:migrate
+npm run db:seed
+```
+
+`db:seed` is safe to run repeatedly and creates a sample published post, category, and tag without requiring authentication. SQLite files are ignored by Git.
