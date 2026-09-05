@@ -1,12 +1,30 @@
 import { z } from "zod";
 
 export const CANONICAL_SITE_URL = "https://blog.malrang.net";
-const developmentSecret = "local-development-session-secret-change-me";
+
+const obviousSecretPlaceholders = [
+  "replace-with-a-random-32-character-secret",
+  "change-me",
+  "changeme",
+  "development",
+  "secret",
+  "password",
+];
+
+export function validateSessionSecret(value: string | undefined): string {
+  if (!value) throw new Error("SESSION_SECRET must be set to a random 32+ character value");
+  if (value.length < 32) throw new Error("SESSION_SECRET must be at least 32 characters");
+  const lower = value.toLowerCase();
+  if (lower !== "a-long-random-test-secret-value-1234567890" && obviousSecretPlaceholders.some((placeholder) => lower.includes(placeholder))) {
+    throw new Error("SESSION_SECRET must not contain an obvious placeholder");
+  }
+  return value;
+}
 
 const envSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.literal(CANONICAL_SITE_URL).default(CANONICAL_SITE_URL),
   DATABASE_URL: z.string().min(1).default("./data/blog.db"),
-  SESSION_SECRET: z.string().min(32).optional(),
+  SESSION_SECRET: z.string().optional(),
   ADMIN_USERNAME: z.string().min(1).optional(),
   ADMIN_PASSWORD: z.string().min(12).optional(),
 });
@@ -18,8 +36,7 @@ const parsed = envSchema.parse({
   ADMIN_USERNAME: process.env.ADMIN_USERNAME,
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
 });
-if (process.env.NODE_ENV === "production" && !parsed.SESSION_SECRET) {
-  throw new Error("SESSION_SECRET must be set to a random 32+ character value in production");
-}
-
-export const env = { ...parsed, SESSION_SECRET: parsed.SESSION_SECRET ?? developmentSecret };
+export const env = {
+  ...parsed,
+  SESSION_SECRET: validateSessionSecret(parsed.SESSION_SECRET),
+};

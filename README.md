@@ -17,6 +17,8 @@ npm run dev
 
 Then open http://localhost:3000.
 
+`SESSION_SECRET` is required in every runtime and must be at least 32 characters without placeholder text. Generate one with `openssl rand -base64 32`. Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` before running `npm run db:bootstrap-admin`.
+
 ## Checks
 
 ```bash
@@ -24,6 +26,15 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
+```
+
+For local checks, supply a temporary secret explicitly:
+
+```bash
+SESSION_SECRET='a-long-random-test-secret-value-1234567890' npm run lint
+SESSION_SECRET='a-long-random-test-secret-value-1234567890' npm run typecheck
+SESSION_SECRET='a-long-random-test-secret-value-1234567890' npm test
+SESSION_SECRET='a-long-random-test-secret-value-1234567890' npm run build
 ```
 
 ## Database

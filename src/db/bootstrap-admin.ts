@@ -1,5 +1,3 @@
-import { eq } from "drizzle-orm";
-
 import type { Db } from "@/db/client";
 import { db } from "@/db/client";
 import { users } from "@/db/schema";
@@ -8,10 +6,8 @@ import { hashPassword } from "@/lib/password";
 
 export async function bootstrapAdmin(database: Db = db, username = env.ADMIN_USERNAME, password = env.ADMIN_PASSWORD): Promise<boolean> {
   if (!username || !password) throw new Error("ADMIN_USERNAME and ADMIN_PASSWORD are required for admin bootstrap");
-  const existing = database.select({ id: users.id }).from(users).where(eq(users.username, username)).get();
-  if (existing) return false;
-  await database.insert(users).values({ username, passwordHash: await hashPassword(password) }).run();
-  return true;
+  const result = await database.insert(users).values({ username, passwordHash: await hashPassword(password) }).onConflictDoNothing({ target: users.username }).run();
+  return result.changes > 0;
 }
 
 if (process.argv[1]?.endsWith("bootstrap-admin.ts")) {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { readSessionCookie, verifySession } from "@/lib/session";
+import { getAuthenticatedSession } from "@/lib/auth";
 
 export function GET(request: Request) {
-  const session = verifySession(readSessionCookie(request.headers.get("cookie")));
-  return NextResponse.json({ authenticated: Boolean(session), user: session ? { id: session.userId, username: session.username } : null }, { status: session ? 200 : 401 });
+  const authenticated = getAuthenticatedSession(request);
+  return NextResponse.json({ authenticated: Boolean(authenticated), user: authenticated ? { id: authenticated.user.id, username: authenticated.user.username } : null }, { status: authenticated ? 200 : 401 });
 }

@@ -7,6 +7,11 @@ function decode(value: string): string {
   return new TextDecoder().decode(bytes);
 }
 
+function decodeBytes(value: string): Uint8Array {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  return Uint8Array.from(atob(normalized), (character) => character.charCodeAt(0));
+}
+
 async function verifyEdgeSession(token: string | undefined): Promise<boolean> {
   if (!token) return false;
   const [encoded, provided] = token.split(".");
@@ -14,9 +19,12 @@ async function verifyEdgeSession(token: string | undefined): Promise<boolean> {
   try {
     const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.SESSION_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
     const digest = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(encoded)));
-    const expectedBase64 = btoa(String.fromCharCode(...digest)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const providedBytes = decodeBytes(provided);
+    let difference = providedBytes.length ^ digest.length;
+    const length = Math.max(providedBytes.length, digest.length);
+    for (let index = 0; index < length; index += 1) difference |= (providedBytes[index] ?? 0) ^ (digest[index] ?? 0);
     const payload = JSON.parse(decode(encoded)) as { exp?: number; userId?: string; username?: string };
-    return expectedBase64 === provided && Boolean(payload.userId && payload.username && payload.exp && payload.exp > Math.floor(Date.now() / 1000));
+    return difference === 0 && Boolean(payload.userId && payload.username && payload.exp && payload.exp > Math.floor(Date.now() / 1000));
   } catch {
     return false;
   }
