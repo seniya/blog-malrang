@@ -1,5 +1,6 @@
 services:
   blog:
+    container_name: malrang-blog
     build:
       context: .
       dockerfile: Dockerfile
