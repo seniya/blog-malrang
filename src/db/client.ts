@@ -18,7 +18,8 @@ function databasePath(url: string): string {
 export function createDb(url = env.DATABASE_URL) {
   const sqlite = new Database(databasePath(url));
   sqlite.pragma("foreign_keys = ON");
-  return drizzle(sqlite, { schema });
+  const database = drizzle(sqlite, { schema });
+  return Object.assign(database, { close: () => sqlite.close() });
 }
 
 const globalForDb = globalThis as typeof globalThis & {

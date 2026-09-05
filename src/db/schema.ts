@@ -48,6 +48,10 @@ export const posts = sqliteTable(
     uniqueIndex("posts_slug_unique").on(table.slug),
     index("posts_status_published_at_idx").on(table.status, table.publishedAt),
     check("posts_status_check", sql`${table.status} in ('draft', 'published')`),
+    check(
+      "posts_published_at_check",
+      sql`(${table.status} = 'published' and ${table.publishedAt} is not null) or (${table.status} = 'draft' and ${table.publishedAt} is null)`,
+    ),
   ],
 );
 

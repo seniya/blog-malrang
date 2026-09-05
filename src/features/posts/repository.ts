@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNotNull } from "drizzle-orm";
 
 import type { Db } from "@/db/client";
 import { posts, type Post } from "@/db/schema";
@@ -11,7 +11,7 @@ export function listPublishedPosts(database: PostRepository, limit = 20): Post[]
   return database
     .select()
     .from(posts)
-    .where(eq(posts.status, "published"))
+    .where(and(eq(posts.status, "published"), isNotNull(posts.publishedAt)))
     .orderBy(desc(posts.publishedAt), desc(posts.createdAt))
     .limit(Math.max(1, Math.min(limit, 100)))
     .all();
@@ -22,9 +22,9 @@ export function getPublishedPostBySlug(database: PostRepository, slug: string): 
   return database
     .select()
     .from(posts)
-    .where(eq(posts.slug, slug))
+    .where(and(eq(posts.slug, slug), eq(posts.status, "published"), isNotNull(posts.publishedAt)))
     .all()
-    .find((post) => post.status === "published");
+    .at(0);
 }
 
 /** Admin-only query boundary; callers must perform authorization in a later phase. */
