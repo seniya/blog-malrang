@@ -19,7 +19,7 @@ export default function AdminPostsPage() {
     }
   }
   return <main className="mx-auto max-w-5xl p-8">
-    <div className="flex items-center justify-between gap-4"><h1 className="text-2xl font-semibold">게시글 관리</h1><div className="flex items-center gap-3"><AdminLogoutButton /><Link href="/admin/posts/new" className="rounded bg-black px-4 py-2 text-white">새 글</Link></div></div>
+    <div className="flex items-center justify-between gap-4"><h1 className="text-2xl font-semibold">게시글 관리</h1><div className="flex items-center gap-3"><Link href="/admin/taxonomy" className="rounded border px-3 py-2">분류 관리</Link><AdminLogoutButton /><Link href="/admin/posts/new" className="rounded bg-black px-4 py-2 text-white">새 글</Link></div></div>
     <div className="my-6 flex flex-wrap gap-3"><input aria-label="게시글 검색" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="제목 또는 슬러그 검색" className="rounded border p-2" /><select aria-label="상태 필터" value={status} onChange={(event) => setStatus(event.target.value)} className="rounded border p-2"><option value="all">전체</option><option value="draft">임시 저장</option><option value="published">공개</option></select></div>
     {query.isLoading && <p>불러오는 중…</p>}
     {query.isError && <p role="alert" className="text-red-600">{query.error.message}</p>}

@@ -28,8 +28,8 @@ export function serverError() {
   return NextResponse.json({ error: "Unable to complete request" }, { status: 500 });
 }
 
-export function conflictError() {
-  return NextResponse.json({ error: "A post with this slug already exists" }, { status: 409 });
+export function conflictError(message = "A post with this slug already exists") {
+  return NextResponse.json({ error: message }, { status: 409, headers: { "Cache-Control": ADMIN_PRIVATE_CACHE_CONTROL } });
 }
 
 export const MAX_POST_BODY_BYTES = 1_048_576;

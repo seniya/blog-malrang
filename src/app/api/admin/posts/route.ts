@@ -34,8 +34,9 @@ export async function POST(request: Request) {
   if (!parsed.success) return validationError(parsed.error);
   try {
     const post = createPost(db, parsed.data);
-    return NextResponse.json({ post }, { status: 201 });
+    return adminJson({ post }, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Invalid")) return validationError(error);
     if (error instanceof Error && error.message.toLowerCase().includes("unique")) return conflictError();
     return serverError();
   }

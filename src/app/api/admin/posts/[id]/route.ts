@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { db } from "@/db/client";
-import { deletePost, getPostById, updatePost } from "@/features/posts/repository";
+import { deletePost, getPostById, getPostTaxonomy, updatePost } from "@/features/posts/repository";
 import { postUpdateSchema } from "@/features/posts/validation";
 import { requireAdmin, sameOrigin } from "@/lib/auth";
 import { adminJson, bodyTooLargeError, conflictError, notFoundError, postIdSchema, readJson, RequestBodyTooLargeError, serverError, validationError } from "../_shared";
@@ -21,7 +21,7 @@ export async function GET(request: Request, context: Context) {
   if (!id.success) return validationError(id.error);
   try {
     const post = getPostById(db, id.data);
-    return post ? adminJson({ post }) : notFoundError();
+    return post ? adminJson({ post: { ...post, ...getPostTaxonomy(db, post.id) } }) : notFoundError();
   } catch {
     return serverError();
   }
@@ -43,8 +43,9 @@ export async function PATCH(request: Request, context: Context) {
   if (!parsed.success) return validationError(parsed.error);
   try {
     const post = updatePost(db, id.data, parsed.data);
-    return post ? NextResponse.json({ post }) : notFoundError();
+    return post ? adminJson({ post }) : notFoundError();
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Invalid")) return validationError(error);
     if (error instanceof Error && error.message.toLowerCase().includes("unique")) return conflictError();
     return serverError();
   }
@@ -59,7 +60,7 @@ export async function DELETE(request: Request, context: Context) {
   const id = await getId(context);
   if (!id.success) return validationError(id.error);
   try {
-    return deletePost(db, id.data) ? NextResponse.json({ deleted: true }) : notFoundError();
+    return deletePost(db, id.data) ? adminJson({ deleted: true }) : notFoundError();
   } catch {
     return serverError();
   }

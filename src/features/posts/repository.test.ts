@@ -5,6 +5,7 @@ import { createDb } from "@/db/client";
 import { categories, postCategories, postTags, posts, tags } from "@/db/schema";
 import { createPost, deletePost, getPublishedCategoryBySlug, getPublishedPostBySlug, getPublishedTagBySlug, listAllPosts, listPublishedCategories, listPublishedPosts, listPublishedTags, updatePost } from "@/features/posts/repository";
 import { postUpdateSchema } from "@/features/posts/validation";
+import { deleteCategory, deleteTag } from "@/features/taxonomy/repository";
 
 function testDb() {
   const database = createDb(":memory:");
@@ -65,6 +66,22 @@ describe("post repository", () => {
     assert.equal(getPublishedPostBySlug(database, future.slug), undefined);
     assert.equal(getPublishedCategoryBySlug(database, "draft-category"), undefined);
     assert.equal(getPublishedTagBySlug(database, "future-tag"), undefined);
+    database.close();
+  });
+
+  it("persists taxonomy assignments atomically and removes joins on deletion", () => {
+    const database = testDb();
+    const category = database.insert(categories).values({ name: "Engineering", slug: "engineering" }).returning().get();
+    const tag = database.insert(tags).values({ name: "SQLite", slug: "sqlite" }).returning().get();
+    const post = createPost(database, { title: "Taxonomy", slug: "taxonomy", content: "body", categoryIds: [category.id], tagIds: [tag.id] });
+    assert.equal(database.select().from(postCategories).all().length, 1);
+    assert.equal(database.select().from(postTags).all().length, 1);
+    assert.throws(() => updatePost(database, post.id, { categoryIds: ["not-a-uuid"] }));
+    assert.equal(database.select().from(postCategories).all().length, 1);
+    deleteCategory(database, category.id);
+    deleteTag(database, tag.id);
+    assert.equal(database.select().from(postCategories).all().length, 0);
+    assert.equal(database.select().from(postTags).all().length, 0);
     database.close();
   });
 

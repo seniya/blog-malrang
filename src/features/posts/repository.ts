@@ -1,10 +1,10 @@
-import { and, desc, eq, isNotNull, lte, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, lte, sql } from "drizzle-orm";
 
 import type { Db } from "@/db/client";
 import { categories, postCategories, postTags, posts, tags, type Category, type Post, type Tag } from "@/db/schema";
 import { postInputSchema, postUpdateSchema, type PostInput, type PostUpdate } from "@/features/posts/validation";
 
-export type PostRepository = Pick<Db, "select" | "selectDistinct" | "insert" | "update" | "delete">;
+export type PostRepository = Pick<Db, "select" | "selectDistinct" | "insert" | "update" | "delete"> & { transaction?: (callback: (database: PostRepository) => unknown) => unknown };
 
 const publishedNow = () => and(eq(posts.status, "published"), isNotNull(posts.publishedAt), lte(posts.publishedAt, new Date()));
 
@@ -104,16 +104,56 @@ export function createPost(database: PostRepository, input: PostInput): Post {
   const parsed = postInputSchema.parse(input);
   const now = new Date();
   const publishedAt = parsed.status === "published" ? (parsed.publishedAt ?? now) : null;
-  return database.insert(posts).values({ ...parsed, publishedAt, createdAt: now, updatedAt: now }).returning().get();
+  const { categoryIds, tagIds, ...postValues } = parsed;
+  const save = (target: PostRepository) => {
+    const post = target.insert(posts).values({ ...postValues, publishedAt, createdAt: now, updatedAt: now }).returning().get();
+    replacePostTaxonomy(target, post.id, categoryIds, tagIds);
+    return post;
+  };
+  return (database.transaction ? database.transaction(save) : save(database)) as Post;
 }
 
 export function updatePost(database: PostRepository, id: string, input: PostUpdate): Post | undefined {
   const parsed = postUpdateSchema.parse(input);
-  const current = getPostById(database, id);
-  if (!current) return undefined;
-  const nextStatus = parsed.status ?? current.status;
-  const nextPublishedAt = nextStatus === "draft" ? null : parsed.publishedAt ?? current.publishedAt ?? new Date();
-  return database.update(posts).set({ ...parsed, status: nextStatus, publishedAt: nextPublishedAt, updatedAt: new Date() }).where(eq(posts.id, id)).returning().get();
+  const { categoryIds, tagIds, ...postValues } = parsed;
+  const save = (target: PostRepository) => {
+    const current = getPostById(target, id);
+    if (!current) return undefined;
+    const nextStatus = parsed.status ?? current.status;
+    const nextPublishedAt = nextStatus === "draft" ? null : parsed.publishedAt ?? current.publishedAt ?? new Date();
+    const post = target.update(posts).set({ ...postValues, status: nextStatus, publishedAt: nextPublishedAt, updatedAt: new Date() }).where(eq(posts.id, id)).returning().get();
+    if (categoryIds !== undefined || tagIds !== undefined) {
+      const currentTaxonomy = getPostTaxonomy(target, id);
+      replacePostTaxonomy(target, id, categoryIds ?? currentTaxonomy.categoryIds, tagIds ?? currentTaxonomy.tagIds);
+    }
+    return post;
+  };
+  return (database.transaction ? database.transaction(save) : save(database)) as Post | undefined;
+}
+
+export function getPostTaxonomy(database: PostRepository, postId: string) {
+  return {
+    categoryIds: database.select({ id: postCategories.categoryId }).from(postCategories).where(eq(postCategories.postId, postId)).all().map((row) => row.id),
+    tagIds: database.select({ id: postTags.tagId }).from(postTags).where(eq(postTags.postId, postId)).all().map((row) => row.id),
+  };
+}
+
+export function getPostTaxonomyNames(database: PostRepository, postId: string) {
+  return {
+    categories: database.select({ id: categories.id, name: categories.name, slug: categories.slug }).from(postCategories).innerJoin(categories, eq(categories.id, postCategories.categoryId)).where(eq(postCategories.postId, postId)).all(),
+    tags: database.select({ id: tags.id, name: tags.name, slug: tags.slug }).from(postTags).innerJoin(tags, eq(tags.id, postTags.tagId)).where(eq(postTags.postId, postId)).all(),
+  };
+}
+
+export function replacePostTaxonomy(database: PostRepository, postId: string, categoryIds: string[], tagIds: string[]) {
+  const categoryCount = database.select({ id: categories.id }).from(categories).where(inArray(categories.id, categoryIds)).all().length;
+  const tagCount = database.select({ id: tags.id }).from(tags).where(inArray(tags.id, tagIds)).all().length;
+  if (categoryCount !== new Set(categoryIds).size) throw new Error("Invalid category ID");
+  if (tagCount !== new Set(tagIds).size) throw new Error("Invalid tag ID");
+  database.delete(postCategories).where(eq(postCategories.postId, postId)).run();
+  database.delete(postTags).where(eq(postTags.postId, postId)).run();
+  if (categoryIds.length) database.insert(postCategories).values(categoryIds.map((categoryId) => ({ postId, categoryId }))).run();
+  if (tagIds.length) database.insert(postTags).values(tagIds.map((tagId) => ({ postId, tagId }))).run();
 }
 
 export function deletePost(database: PostRepository, id: string): boolean {

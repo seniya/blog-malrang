@@ -15,6 +15,8 @@ export const postInputSchema = z.object({
   coverImageUrl: z.string().url().nullable().optional(),
   status: postStatusSchema.default("draft"),
   publishedAt: z.coerce.date().nullable().optional(),
+  categoryIds: z.array(z.string().uuid()).max(50).default([]),
+  tagIds: z.array(z.string().uuid()).max(100).default([]),
 });
 
 export const postUpdateSchema = z.object({
@@ -31,6 +33,8 @@ export const postUpdateSchema = z.object({
   coverImageUrl: z.string().url().nullable().optional(),
   status: postStatusSchema.optional(),
   publishedAt: z.coerce.date().nullable().optional(),
+  categoryIds: z.array(z.string().uuid()).max(50).optional(),
+  tagIds: z.array(z.string().uuid()).max(100).optional(),
 });
 
 export type PostInput = z.input<typeof postInputSchema>;

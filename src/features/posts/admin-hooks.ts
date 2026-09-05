@@ -2,8 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Post } from "@/db/schema";
+import type { Category, Tag } from "@/db/schema";
 
 export const adminPostsKey = ["admin", "posts"] as const;
+export function useAdminTaxonomy() { return useQuery({ queryKey: ["admin", "taxonomy"], queryFn: () => requestJson<{ categories: Category[]; tags: Tag[] }>("/api/admin/taxonomy") }); }
+export function useCreateTaxonomy() { const client = useQueryClient(); return useMutation({ mutationFn: (input: { type: "category" | "tag"; data: Record<string, string> }) => requestJson("/api/admin/taxonomy", { method: "POST", body: JSON.stringify(input) }), onSuccess: () => client.invalidateQueries({ queryKey: ["admin", "taxonomy"] }) }); }
 
 async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
