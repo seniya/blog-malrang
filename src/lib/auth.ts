@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import type { Db } from "@/db/client";
 import { db } from "@/db/client";
 import { users } from "@/db/schema";
+import { env } from "@/lib/env";
 import { readSessionCookie, verifySession } from "@/lib/session";
 
 const LOGIN_WINDOW_MS = 60_000;
@@ -33,7 +34,8 @@ export function adminPageRedirect(request: Request): URL | null {
 
 export function sameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
-  return !origin || origin === new URL(request.url).origin;
+  if (!origin) return true;
+  return origin === env.NEXT_PUBLIC_SITE_URL || origin === new URL(request.url).origin;
 }
 
 function clientIp(request: Request): string {
