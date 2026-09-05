@@ -11,6 +11,8 @@ services:
       NODE_ENV: production
       DATABASE_URL: /app/data/blog.db
       SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       NEXT_PUBLIC_SITE_URL: https://blog.malrang.net
     volumes:
       - ./data:/app/data
