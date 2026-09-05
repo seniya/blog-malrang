@@ -28,13 +28,14 @@ npm test
 npm run build
 ```
 
-For local checks, supply a temporary secret explicitly:
+For local checks, supply a fresh temporary secret explicitly:
 
 ```bash
-SESSION_SECRET='a-long-random-test-secret-value-1234567890' npm run lint
-SESSION_SECRET='a-long-random-test-secret-value-1234567890' npm run typecheck
-SESSION_SECRET='a-long-random-test-secret-value-1234567890' npm test
-SESSION_SECRET='a-long-random-test-secret-value-1234567890' npm run build
+export SESSION_SECRET="$(openssl rand -base64 48)"
+npm run lint
+npm run typecheck
+npm test
+npm run build
 ```
 
 ## Database
